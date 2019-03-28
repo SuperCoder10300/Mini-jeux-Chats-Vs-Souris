@@ -1,0 +1,7 @@
+#floor {
+    background-image: url("./img/pelouse.jpg");
+    background-repeat: no-repeat ; /*pas de répition de l'image*/
+    background-attachment: fixed ;
+   }
+
+   
