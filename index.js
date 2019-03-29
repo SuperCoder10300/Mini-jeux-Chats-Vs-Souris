@@ -51,6 +51,7 @@ function createAnimal(type) {
       animal = new Person(
         types.CHAT,
         initpos(0),
+        targetpos(),
         colors[0],
         2,
         power / 4,
