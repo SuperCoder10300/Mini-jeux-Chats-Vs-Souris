@@ -63,6 +63,7 @@ function createAnimal(type) {
       animal = new Person(
         types.SOURIS,
         initpos(1),
+        targetpos(),
         colors[1],
         1,
         power / 5,
@@ -75,6 +76,7 @@ function createAnimal(type) {
       animal = new Person(
         types.SOURIS,
         initpos(1),
+        targetpos(),
         colors[1],
         1,
         power / 5,
@@ -92,10 +94,25 @@ function initpos(add) {
   return { x: posx, y: posy };
 }
 
+function targetpos(){
+  let corner=parseInt(Math.random()*4);
+  let posx=0;
+  let posy=0;
+  if (!corner) corner=0;
+  switch(corner) {
+case 1: posx=maxRange;break;
+case 2: posy=maxRange; posx=maxRange;break;
+case 3: posy=maxRange;break; 
+default: break; }
+  
+  return { x: posx, y: posy };
+
+}
+
 // main class for all moving object
 
 class Person {
-  constructor(type, position, color, vitesse, force, vie, taille) {
+  constructor(type, position,targetPos, color, vitesse, force, vie, taille) {
     ref += 1; // unique Id
     var nom = type + ref;
     createSquare(floor, nom, taille, color, type);
@@ -115,6 +132,7 @@ class Person {
     if (type == types.SOURIS) emoji = "🐁";
     var pos = verif2D(position);
 
+    this.targetPos=targetPos;
     this.emoji = emoji;
     this.nom = nom;
     this.type = type;
@@ -172,7 +190,7 @@ function verif2D(pos) {
   }
   return { x: x, y: y };
 }
-function createSquare(parent, enfant, taille, color, img) {
+function createSquare(parent, enfant, taille, color, image) {
   var p = document.getElementById(parent);
   if (Boolean(p) == false) {
     p = document.createElement("div");
@@ -188,18 +206,20 @@ function createSquare(parent, enfant, taille, color, img) {
 
   var img=new Image(taille,taille);
 
-  img.src='./img/"+img+".png';
+  img.src='./img/"+image+".png';
 
   img.addEventListener('load', function() {
 
     e.appendChild(img);
 });
 
+p.appendChild(img);
+
   p.appendChild(e);
 
 }
 
-function createFloor(nom, taille, color, img) {
+function createFloor(nom, taille, color, image) {
   var e = document.createElement("div");
   e.id = nom;
   e.style.width = taille + "px";
@@ -210,6 +230,17 @@ function createFloor(nom, taille, color, img) {
     move();
   };
 
+  var img=new Image(taille,taille);
+
+  img.src='./img/"+image+".png';
+
+  img.addEventListener('load', function() {
+
+    e.appendChild(img);
+});
+
+e.appendChild(img);
+
   document.body.appendChild(e);
 }
 
@@ -219,63 +250,94 @@ function changeColor() {
   return rainbowColors[index];
 }
 
-// fonction de deplacement automatique lorque que l'on click sur le floor
+// fonction de deplacement automatique ou lorque que l'on click sur le floor
 function move() {
+  display="";
   if (animals.length > 1) {
-  isFinish=false; 
-      animals.forEach(function(element) {
-      var mov = { x: 0, y: 0 };
+  isFinish=false;
+  let isFinishA=false;
+  let isFinishB=false;
+         animals.forEach(function(element) {
+      let mov = { x: 0, y: 0 };
       // comportements
-      if (element.type == "souris") mov = randomMove(element.pos); //  comportement aléatoire
-      if (element.type == "chat") mov = huntMove(element.pos); // comportement de chasseur
+    switch (element.type) {
+
+    case types.SOURIS:         
+     mov = targetMove(element.pos,element.targetPos); //  comportement de fuite
+     isFinishA=true; // au moins un item est present 
+      break;
+    
+    case types.CHAT:
+    mov= huntMove(element.pos,element.type); // comportement de chasseur
+    isFinishB=true;
+    break;
+
+    default: 
+    mov = randomMove(element.pos); //  comportement aleatoire
+     isFinishA=true; // au moins un item est present 
+      break;
+    }
+
       mov = { x: element.v * mov.x, y: element.v * mov.y }; // deplacement avec la vitesse
       var pos = { x: mov.x + element.pos.x, y: mov.y + element.pos.y };
 
       pos = verif2D(pos); // verifie que nous sommes pas hors cadre
-      display =
-        "nom:" +
+      display =display+"<P>"+
+        " nom: " +
         element.nom +
-        "vie:" +
+        " vie: " +
         element.vie +
-        "pos x:" +
+        " pos x: " +
         element.pos.x +
-        " y:" +
-        element.pos.y;
-      console.log(display);
+        " y: " +
+        element.pos.y
+        +"</P>";
+   
       element.changePos(pos); // change la position de l'objet
       animals = isSamePosition(element); //verifie et elimine les items mort
     });
+    isFinish=isFinishA^isFinishB;
+    console.log(display);
   } else window.alert("FINI !");
 }
 // fonctions utilisées dans move
 
 function randomSens() {
-  let dir = parseInt(Math.random() * 2) - 1; // valeur comprise entre -1 et 1
+  let dir = (Math.random() * 2) - 1; // valeur comprise entre -1 et 1
   return dir;
 }
 
 function randomMove() {
-  var pos = { x: 0, y: 0 };
+  let pos = { x: 0, y: 0 };
   pos.x = randomSens();
   pos.y = randomSens();
   return pos;
 }
 
-function huntMove(pos) {
-  var mov = { x: 0, y: 0 };
-  var targetpos = mov;
+function huntMove(pos,type) {
+  let targetpos = { x: 0, y: 0 };
   if (pos == null) pos = { x: 0, y: 0 };
-  if (nearPos(pos) != null) targetpos = nearPos(pos);
+  if (nearPos(pos,type) != null) targetpos = nearPos(pos,type);
+  return moveToTarget(pos,targetpos);
+}
+
+function targetMove(pos,targetpos) {
+   if (pos == null) pos = { x: 0, y: 0 };
+  return moveToTarget(pos,targetpos);
+}
+  
+function moveToTarget(pos,targetpos) { 
+  let mov = { x: 0, y: 0 }; 
   if (targetpos.x - pos.x > 0) mov.x = 1;
   if (targetpos.x - pos.x < 0) mov.x = -1;
   if (targetpos.y - pos.y > 0) mov.y = 1;
   if (targetpos.y - pos.y < 0) mov.y = -1;
-
   return { x: mov.x, y: mov.y };
 }
 
 function isSamePosition(animal) {
   var updatedAnimals = new Array();
+  
   animals.forEach(function(element, index) {
     if (element.type != animal.type && element.nom != animal.nom) {
       var pos = element.pos;
@@ -292,19 +354,19 @@ function isSamePosition(animal) {
   return updatedAnimals;
 }
 
-function nearPos(pos) {
-  var nearPos = null;
+function nearPos(pos,type) {
+  let nearPos = null;
   animals.forEach(function(element) {
-    if (element.type == types.SOURIS) {
+    if (element.type != type) {
       if (nearPos == null) {
         nearPos = element.pos;
       } else {
         if (distance2(pos, element.pos) < distance2(pos, nearPos))
-          nearPos = element.pos;
+          nearPos = element.pos; 
       }
     }
   });
-  if (nearPos == null) nearpos = pos; //cas position identique ou plus de souris
+  if (nearPos == null) nearpos = pos; //cas position identique ou plus d'items voulus
 
   return nearPos;
 }
@@ -315,8 +377,8 @@ function distance2(pos, pos2) {
 
 // ready ?
 window.onload = function() { 
-  createFloor(floor, maxRange, backgroundColor[0], null);
-  createFloor(score, maxRange, backgroundColor[1], null);
+  createFloor(floor, maxRange, backgroundColor[0], floor);
+  createFloor(score, maxRange, backgroundColor[1], score);
 
   let ratio=parseInt(Math.random() *10);
 
@@ -348,7 +410,7 @@ window.onload = function() {
     if (start === null) start = timestamp;
     progress = timestamp - start;
     d.style.left = Math.min(progress / 10, 200) + "px";
-    if (progress < period ) {
+    if (progress < period || !isFinish ) {
       requestAnimationFrame(step);
       requestAnimationFrame(move);
     }
