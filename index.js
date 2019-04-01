@@ -1,3 +1,6 @@
+// mini Jeux 100% JS 
+// Jeux Chat vs Souris 
+
 // Enum
 const types = {
   CHAT: "chat",
@@ -5,9 +8,9 @@ const types = {
 };
 
 // globals variables INIT
-var period = 8000;
-var display = "";
-var isFinish=false;
+var period = 20000; // Temps maximum d'execution 
+var display = ""; // variable d 'affichage
+var isFinish=false; // permet l'arret
 var rainbowColors = [
   "Violet",
   "Indigo",
@@ -17,31 +20,34 @@ var rainbowColors = [
   "Orange",
   "Red"
 ];
-var powerRatio = 10;
-var power = 20;
+var powerRatio = 10; // difference de puissance entre le chasseur et les proies
+var power = 20; // valeur de base de force
 var backgroundColor = ["green", "white", "grey"];
 var colors = ["red", "blue"];
-var itemNumber = 60;
+var itemNumber = 60;// Nombres d'elements maximum sur le jeux
 var items = ["chat", "souris", "souris", "autreSouris"];
 var index = 0;
-var maxRange = 400;
+var maxRange = 400; // Nombre de pixels de la zone de jeux
 var color = colors[0];
-var minpos = { x: 0, y: 0 };
-var maxpos = { x: maxRange, y: maxRange };
+var minpos = { x: 0, y: 0 }; // pos0 de la fenetre
+var maxpos = { x: maxRange, y: maxRange }; // pos maxi de la fenetre
 var middlepos = {
   x: (maxpos.x - minpos.x) / 2,
   y: (maxpos.y - minpos.y) / 2
-};
-var vitesse = 200;
-var taille = 50;
+}; // position mediane 
+var vitesse = 200; // vitesse de base 
+var taille = 50; // Taile des items en px
 var ref = 0;
 var count = 0;
-var animals = new Array();
+var animals = new Array(); // init des arrays
 var animations = new Array();
 var floor = "floor";
 var score = "score";
 
-// init des fonctions globales
+// init des fonctions principales
+
+
+// Creation des animaux en fonction de type
 
 function createAnimal(type) {
   var animal = {};
@@ -88,12 +94,22 @@ function createAnimal(type) {
   return animal;
 }
 
+// position de departs aléatoires des items dans 2 zones pré-definie
+/**
+ * 
+ * @param {*} add  =0 :1er partie horizontal =1 deuxième partie horizontal 
+ *                      
+ */
 function initpos(add) {
   var posx = parseInt(Math.random() * maxpos.x);
   var posy = parseInt(add * middlepos.y + Math.random() * middlepos.y);
   return { x: posx, y: posy };
 }
 
+// choix aléatire parmis 4 positions finales predefinies  
+/**
+ * return final position
+ */
 function targetpos(){
   let corner=parseInt(Math.random()*4);
   let posx=0;
@@ -109,28 +125,43 @@ default: break; }
 
 }
 
+
 // main class for all moving object
 
-class Person {
+
+/**
+ * créer le personnage 
+*type: types.chat ou souris (enum types)
+*position: position de depart
+*targetPos: position d'arrivé
+*color: couleur 
+ *vitesse: vitesse 
+ * force: ferce de frappe
+ *  vie: puissancve de vie 
+ * taille: taille de l'obget graphique en pixel
+ */
+
+ class Person {
   constructor(type, position,targetPos, color, vitesse, force, vie, taille) {
     ref += 1; // unique Id
     var nom = type + ref;
-    createSquare(floor, nom, taille, color, type);
+    createSquare(floor, nom, taille, color, type); // création graphique de l objet
     var element = document.getElementById(nom);
     // mouse contoller actions
-    element.onclick = function() {
+    element.onclick = function() {  // duplique l'objet
       var animal = createAnimal(type);
       animals.push(animal);
     };
     var objet = this;
-    element.onmouseover = function() {
+    element.onmouseover = function() { // augmente sa vie
       objet.soigne(force);
-    
-    };
+        };
 
     var emoji = "🐈";
     if (type == types.SOURIS) emoji = "🐁";
-    var pos = verif2D(position);
+    var pos = verif2D(position); // verification d'être dans la zone affichage
+
+    // init du nouvelle objet    
 
     this.targetPos=targetPos;
     this.emoji = emoji;
@@ -146,19 +177,19 @@ class Person {
     this.elm.style.left = pos.x + "px";
   
   }
-  changePos(position) {
+  changePos(position) {   // déplace l'objet
     var pos = verif2D(position);
     this.pos = pos;
     this.elm.style.top = this.pos.y + "px";
     this.elm.style.left = this.pos.x + "px";
     if (this.vie > 0) this.elm.textContent = this.emoji + this.vie;
   }
-  degat(force) {
+  degat(force) {  // suite à une attaque
     this.vie = this.vie - force;
     this.elm.style.background = changeColor();
     if (this.vie > 0) this.elm.textContent = this.emoji + this.vie;
   }
-  isDead() {
+  isDead() { // mort ?
     if (this.vie <= 0) {
       this.elm.style.background = backgroundColor[0];
       this.elm.textContent = this.emoji + "🔥";
@@ -167,12 +198,18 @@ class Person {
       return false;
     }
   }
-  soigne(force) {
+  soigne(force) { // soigne 
     this.degat(-force);
   }
 }
 
 // fonctions utilisées dans la class
+
+// verifie que l'on se trouve dans la zone autorisé et limite la position à la zone possible d'afichage
+/**
+ * 
+ * @param {*} pos = position de l'objet 
+ */
 function verif2D(pos) {
   var x = pos.x;
   var y = pos.y;
@@ -190,6 +227,16 @@ function verif2D(pos) {
   }
   return { x: x, y: y };
 }
+
+// créer l'element à affiché
+/**
+ * creer un element box html
+ * @param {*} parent html parent
+ * @param {*} enfant html enfant
+ * @param {*} taille taille de la boite
+ * @param {*} color couleur de la boite
+ * @param {*} image image de fond
+ */
 function createSquare(parent, enfant, taille, color, image) {
   var p = document.getElementById(parent);
   if (Boolean(p) == false) {
@@ -218,7 +265,13 @@ p.appendChild(img);
   p.appendChild(e);
 
 }
-
+/**Creer le fond graphique
+ * 
+ * @param {*} nom nom de la fenetre
+ * @param {*} taille taille en pixel
+ * @param {*} color couleur
+ * @param {*} image image de fond
+ */
 function createFloor(nom, taille, color, image) {
   var e = document.createElement("div");
   e.id = nom;
@@ -243,20 +296,26 @@ e.appendChild(img);
 
   document.body.appendChild(e);
 }
-
+/**
+ * roue de couleurs de l arc en ciel
+ */
 function changeColor() {
   index += 1;
   index = index % rainbowColors.length;
   return rainbowColors[index];
 }
 
-// fonction de deplacement automatique ou lorque que l'on click sur le floor
+
+/**
+ *  fonction de deplacement automatique 
+ * routine appelé regulierement 
+ */
 function move() {
-  display="";
-  if (animals.length > 1) {
-  isFinish=false;
-  let isFinishA=false;
-  let isFinishB=false;
+  display=""; // remet l affichage à zero
+  if (animals.length > 1) { // cdt minimum
+  isFinish=true; // fin de vie du programme
+  let isContinueA=false; 
+  let isContinueB=false;
          animals.forEach(function(element) {
       let mov = { x: 0, y: 0 };
       // comportements
@@ -269,7 +328,7 @@ function move() {
     
     case types.CHAT:
     mov= huntMove(element.pos,element.type); // comportement de chasseur
-    isFinishB=true;
+    isFinishB=true; // au moins un item est present
     break;
 
     default: 
@@ -282,6 +341,7 @@ function move() {
       var pos = { x: mov.x + element.pos.x, y: mov.y + element.pos.y };
 
       pos = verif2D(pos); // verifie que nous sommes pas hors cadre
+      
       display =display+"<P>"+
         " nom: " +
         element.nom +
@@ -296,36 +356,52 @@ function move() {
       element.changePos(pos); // change la position de l'objet
       animals = isSamePosition(element); //verifie et elimine les items mort
     });
-    isFinish=isFinishA^isFinishB;
+    isFinish=!(isContinueA^isContinueB); // au moins un item est present mais pas les deux 
     console.log(display);
   } else window.alert("FINI !");
 }
 // fonctions utilisées dans move
-
+/**
+ * Avance ou recule de 1 pas maxi
+ */
 function randomSens() {
   let dir = (Math.random() * 2) - 1; // valeur comprise entre -1 et 1
   return dir;
 }
-
+/**
+ * deplacement aleatoire de 1 pas en 2D
+ */
 function randomMove() {
   let pos = { x: 0, y: 0 };
   pos.x = randomSens();
   pos.y = randomSens();
   return pos;
 }
-
+/**
+ * Deplacement de chasseur
+ * @param {*} pos position de depart
+ * @param {*} type type d'items
+ */
 function huntMove(pos,type) {
   let targetpos = { x: 0, y: 0 };
   if (pos == null) pos = { x: 0, y: 0 };
   if (nearPos(pos,type) != null) targetpos = nearPos(pos,type);
   return moveToTarget(pos,targetpos);
 }
-
+/**
+ * 
+ * @param {*} pos position actuelle 
+ * @param {*} targetpos position finale
+ */
 function targetMove(pos,targetpos) {
    if (pos == null) pos = { x: 0, y: 0 };
   return moveToTarget(pos,targetpos);
 }
-  
+/**
+ * @returns next position 
+ *  @param {*} pos position actuelle 
+ * @param {*} targetpos position finale
+ */
 function moveToTarget(pos,targetpos) { 
   let mov = { x: 0, y: 0 }; 
   if (targetpos.x - pos.x > 0) mov.x = 1;
@@ -335,6 +411,11 @@ function moveToTarget(pos,targetpos) {
   return { x: mov.x, y: mov.y };
 }
 
+/**
+ * 
+ * @param {*} animal verifie si cette objet touche un autre objet
+ * @returns animals les objets modifies et eliminées suite à la collision 
+ */
 function isSamePosition(animal) {
   var updatedAnimals = new Array();
   
@@ -353,7 +434,11 @@ function isSamePosition(animal) {
   });
   return updatedAnimals;
 }
-
+/**
+ * retourne la distance de l'objet different le plus proche
+ * @param {*} pos position de l'objet 
+ * @param {*} type  type d objet
+ */
 function nearPos(pos,type) {
   let nearPos = null;
   animals.forEach(function(element) {
@@ -370,31 +455,38 @@ function nearPos(pos,type) {
 
   return nearPos;
 }
-
+/**
+ * calcul la distance au carrée entre les deux positions 
+ * @param {*} pos 
+ * @param {*} pos2 
+ */
 function distance2(pos, pos2) {
   return (pos.x - pos2.x) ** 2 + (pos.y - pos2.y) ** 2;
 }
 
 // ready ?
+/**
+ * Programme principal
+ */
 window.onload = function() { 
-  createFloor(floor, maxRange, backgroundColor[0], floor);
-  createFloor(score, maxRange, backgroundColor[1], score);
+  createFloor(floor, maxRange, backgroundColor[0], floor); // creer le background floor
+  createFloor(score, maxRange, backgroundColor[1], score); // creer le background score
 
-  let ratio=parseInt(Math.random() *10);
+  let ratio=parseInt(Math.random() *10); 
 
-  powerRatio=powerRatio+ratio;
-
+  powerRatio=powerRatio+ratio; // ratio chasseur vs Proies
+// creér les items en respectant le ratio
   for (let index = 0; index <= itemNumber - items.length; index++) {
     let item = types.SOURIS;
     if (index % powerRatio*2 == 0) item = types.CHAT;
     items.push(item);
   }
-
+// créer les objets 
   items.forEach(function(item) {
     var animal = createAnimal(item);
     animals.push(animal);
   });
-
+// Raffraichissement, fonctioon recurrente 
   window.requestAnimationFrame =
     window.requestAnimationFrame ||
     window.mozRequestAnimationFrame ||
@@ -403,19 +495,19 @@ window.onload = function() {
 
   var start = null;
 
-  var d = document.getElementById(floor);
+  var d = document.getElementById(floor); // fenêtre liée au mouvement 
 
   function step(timestamp) {
     var progress;
     if (start === null) start = timestamp;
     progress = timestamp - start;
     d.style.left = Math.min(progress / 10, 200) + "px";
-    if (progress < period || !isFinish ) {
+    if (progress < period || !isFinish ) {  // arret si temps > period ou si le jeux est fini
       requestAnimationFrame(step);
       requestAnimationFrame(move);
     }
   }
-
+// init du 1 er tour
   requestAnimationFrame(step);
   requestAnimationFrame(move);
 };
